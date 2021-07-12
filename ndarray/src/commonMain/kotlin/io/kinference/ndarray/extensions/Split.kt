@@ -20,8 +20,8 @@ fun computeSplitShape(shape: IntArray, axis: Int, split: Int, keepDims: Boolean)
 
 
 fun NDArray.splitWithAxis(parts: Int, axis: Int = 0, keepDims: Boolean = true): List<MutableNDArray> {
-    require(axis in shape.indices) { "Index $axis out of shape bound: (0, ${rank - 1}" }
     val actualAxis = indexAxis(axis)
+    require(actualAxis in shape.indices) { "Index $axis out of shape bound: (${-rank}, ${rank - 1}" }
     val elementsByIndex = shape[actualAxis]
     val mainSplit = ceil(elementsByIndex.toDouble() / parts).toInt()
     val split = IntArray(parts) { mainSplit }

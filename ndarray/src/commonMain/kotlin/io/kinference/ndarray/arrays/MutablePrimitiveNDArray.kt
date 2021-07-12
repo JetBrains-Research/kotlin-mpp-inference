@@ -11,11 +11,19 @@ import io.kinference.primitives.types.*
 
 @GenerateNameFromPrimitives
 open class MutablePrimitiveNDArray(array: PrimitiveTiledArray, strides: Strides = Strides.EMPTY) : PrimitiveNDArray(array, strides), MutableNumberNDArray {
-    constructor(shape: IntArray, divider: Int = 1) : this(PrimitiveTiledArray(shape, divider), Strides(shape))
-    constructor(shape: IntArray, divider: Int = 1, init: (Int) -> PrimitiveType) : this(PrimitiveTiledArray(shape, divider, init), Strides(shape))
+    constructor(shape: IntArray) : this(PrimitiveTiledArray(shape), Strides(shape))
+    constructor(shape: IntArray, init: (Int) -> PrimitiveType) : this(PrimitiveTiledArray(shape, init), Strides(shape))
 
-    constructor(strides: Strides, divider: Int = 1) : this(PrimitiveTiledArray(strides, divider), strides)
-    constructor(strides: Strides, divider: Int = 1, init: (Int) -> PrimitiveType) : this(PrimitiveTiledArray(strides, divider, init), strides)
+    constructor(strides: Strides) : this(PrimitiveTiledArray(strides), strides)
+    constructor(strides: Strides, init: (Int) -> PrimitiveType) : this(PrimitiveTiledArray(strides, init), strides)
+
+    constructor(shape: IntArray, customBlockSize: Int) : this(PrimitiveTiledArray(shape.reduce(Int::times), customBlockSize), Strides(shape))
+    constructor(shape: IntArray, customBlockSize: Int, init: (Int) -> PrimitiveType) :
+        this(PrimitiveTiledArray(shape.reduce(Int::times), customBlockSize, init), Strides(shape))
+
+    constructor(strides: Strides, customBlockSize: Int) : this(PrimitiveTiledArray(strides.linearSize, customBlockSize), strides)
+    constructor(strides: Strides, customBlockSize: Int, init: (Int) -> PrimitiveType) :
+        this(PrimitiveTiledArray(strides.linearSize, customBlockSize, init), strides)
 
     override fun viewMutable(vararg axes: Int): MutablePrimitiveNDArray {
         val offset = axes.foldIndexed(0) { index, acc, i -> acc + i * strides.strides[index] }

@@ -5,16 +5,16 @@ import io.kinference.ndarray.arrays.*
 import io.kinference.ndarray.arrays.tiled.*
 import io.kinference.primitives.types.DataType
 
-inline fun <reified T> createArray(type: DataType, shape: IntArray, divider: Int = 1, noinline init: (Int) -> T): Any {
+inline fun <reified T> createArray(type: DataType, shape: IntArray, noinline init: (Int) -> T): Any {
     return when (type) {
-        DataType.DOUBLE -> DoubleTiledArray(shape, divider) { init(it) as Double }
-        DataType.FLOAT -> FloatTiledArray(shape, divider) { init(it) as Float }
-        DataType.LONG -> LongTiledArray(shape, divider) { init(it) as Long }
-        DataType.INT -> IntTiledArray(shape, divider) { init(it) as Int }
-        DataType.SHORT -> ShortTiledArray(shape, divider) { init(it) as Short }
-        DataType.BOOLEAN -> BooleanTiledArray(shape, divider) { init(it) as Boolean }
-        DataType.BYTE -> ByteTiledArray(shape, divider) { init(it) as Byte }
-        DataType.UBYTE -> UByteTiledArray(shape, divider) { init(it) as UByte }
+        DataType.DOUBLE -> DoubleTiledArray(shape) { init(it) as Double }
+        DataType.FLOAT -> FloatTiledArray(shape) { init(it) as Float }
+        DataType.LONG -> LongTiledArray(shape) { init(it) as Long }
+        DataType.INT -> IntTiledArray(shape) { init(it) as Int }
+        DataType.SHORT -> ShortTiledArray(shape) { init(it) as Short }
+        DataType.BOOLEAN -> BooleanTiledArray(shape) { init(it) as Boolean }
+        DataType.BYTE -> ByteTiledArray(shape) { init(it) as Byte }
+        DataType.UBYTE -> UByteTiledArray(shape) { init(it) as UByte }
         else -> error("Unsupported data type: $type")
     }
 }

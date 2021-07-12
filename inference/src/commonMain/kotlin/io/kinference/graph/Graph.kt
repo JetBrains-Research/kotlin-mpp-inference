@@ -3,6 +3,7 @@ package io.kinference.graph
 import io.kinference.utils.Stack
 import io.kinference.data.ONNXData
 import io.kinference.data.tensors.Tensor
+import io.kinference.ndarray.arrays.tiled.TiledArraysUtils
 import io.kinference.ndarray.logger
 import io.kinference.operators.*
 import io.kinference.protobuf.message.*
@@ -109,15 +110,6 @@ class Graph(proto: GraphProto) {
                             val name = operator.inputs[input.index]
                             if (input.name == "weight" || input.name == "bias")
                                 put(name, input.divider * numHeads)
-                            else
-                                put(name, input.divider)
-                        }
-                    }
-                } else {
-                    for (input in operator.info.inputs) {
-                        if (input.index in operator.inputs.indices) {
-                            val name = operator.inputs[input.index]
-                            put(name, input.divider)
                         }
                     }
                 }
@@ -125,9 +117,12 @@ class Graph(proto: GraphProto) {
         }
 
         initializers = proto.initializer.map {
-            val divider = dividerByName[it.name] ?: 1
-
-            Tensor.create(it, divider)
+            val divider = dividerByName[it.name]
+            if (divider != null) {
+                makeTensorWithDivider(it, divider)
+            } else {
+                Tensor.create(it)
+            }
         }
     }
 
@@ -140,13 +135,24 @@ class Graph(proto: GraphProto) {
         get() = inputs.map { it.name }
 
     fun prepareInput(proto: TensorProto): Tensor {
-        val divider = dividerByName[proto.name] ?: 1
-
-        return Tensor.create(proto, divider)
+        val divider = dividerByName[proto.name]
+        return if (divider != null) {
+            makeTensorWithDivider(proto, divider)
+        } else {
+            Tensor.create(proto)
+        }
     }
 
     private fun Context.cleanupUntilOrder(order: Int) {
         return this.removeValues { valueOrderInfo.getOrder(it) <= order }
+    }
+
+    private fun makeTensorWithDivider(proto: TensorProto, divider: Int): Tensor {
+        val rowSize = proto.dims.last()
+        require(rowSize % divider == 0)
+        val dividedRowSize = rowSize / divider
+        val blockSize = TiledArraysUtils.blockSizeByLastDim(dividedRowSize)
+        return Tensor.create(proto, blockSize)
     }
 
     @ExperimentalTime

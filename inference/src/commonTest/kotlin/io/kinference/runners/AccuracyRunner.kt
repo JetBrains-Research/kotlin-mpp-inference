@@ -2,6 +2,7 @@ package io.kinference.runners
 
 import io.kinference.data.ONNXData
 import io.kinference.data.ONNXDataType
+import io.kinference.data.tensors.Tensor
 import io.kinference.model.Model
 import io.kinference.ndarray.logger
 import io.kinference.protobuf.message.TensorProto
@@ -51,7 +52,7 @@ object AccuracyRunner {
             } else {
                 val inputFiles = files.filter { file -> "input" in file.path }
                 val inputProtos = inputFiles.map { TensorProto.decode(loader.bytes(TestDataLoader.Path(path, it.path))) }
-                val inputs = inputProtos.map{ model.graph.prepareInput(it) }
+                val inputs = inputProtos.map{ Tensor.create(it) }
 
                 val outputFiles =  files.filter { file -> "output" in file.path }
                 val expectedOutputs = outputFiles.map { DataLoader.getData(loader.bytes(TestDataLoader.Path(path, it.path)), it.type) }.toList()

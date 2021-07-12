@@ -14,11 +14,20 @@ import kotlin.math.*
 
 @GenerateNameFromPrimitives
 open class PrimitiveNDArray(array: PrimitiveTiledArray, strides: Strides) : NumberNDArray {
-    constructor(shape: IntArray, divider: Int = 1) : this(PrimitiveTiledArray(shape, divider), Strides(shape))
-    constructor(shape: IntArray, divider: Int = 1, init: (Int) -> PrimitiveType) : this(PrimitiveTiledArray(shape, divider, init), Strides(shape))
+    constructor(shape: IntArray) : this(PrimitiveTiledArray(shape), Strides(shape))
+    constructor(shape: IntArray, init: (Int) -> PrimitiveType) : this(PrimitiveTiledArray(shape, init), Strides(shape))
 
-    constructor(strides: Strides, divider: Int = 1) : this(PrimitiveTiledArray(strides, divider), strides)
-    constructor(strides: Strides, divider: Int = 1, init: (Int) -> PrimitiveType) : this(PrimitiveTiledArray(strides, divider, init), strides)
+    constructor(strides: Strides) : this(PrimitiveTiledArray(strides), strides)
+    constructor(strides: Strides, init: (Int) -> PrimitiveType) : this(PrimitiveTiledArray(strides, init), strides)
+
+    constructor(shape: IntArray, customBlockSize: Int) : this(PrimitiveTiledArray(shape.reduce(Int::times), customBlockSize), Strides(shape))
+    constructor(shape: IntArray, customBlockSize: Int, init: (Int) -> PrimitiveType) :
+        this(PrimitiveTiledArray(shape.reduce(Int::times), customBlockSize, init), Strides(shape))
+
+    constructor(strides: Strides, customBlockSize: Int) : this(PrimitiveTiledArray(strides.linearSize, customBlockSize), strides)
+    constructor(strides: Strides, customBlockSize: Int, init: (Int) -> PrimitiveType) :
+        this(PrimitiveTiledArray(strides.linearSize, customBlockSize, init), strides)
+
 
     var array: PrimitiveTiledArray = array
         protected set
@@ -662,6 +671,10 @@ open class PrimitiveNDArray(array: PrimitiveTiledArray, strides: Strides) : Numb
 
     override fun splitHorizontalByBlocks(parts: Int): Array<NDArray> {
         require(rank <= 2) { "" }
+        if (blocksInRow % parts != 0) {
+            logger.info { "Split works ineffectively" }
+            return splitWithAxis(parts, axis = -1).toTypedArray()
+        }
         require(blocksInRow % parts == 0) { "" }
 
         val blocksInRow = this.blocksInRow
@@ -820,18 +833,19 @@ open class PrimitiveNDArray(array: PrimitiveTiledArray, strides: Strides) : Numb
     }
 
     companion object {
+        val logger = logger("NDArray")
+
         fun scalar(value: PrimitiveType): PrimitiveNDArray {
             return PrimitiveNDArray(PrimitiveTiledArray(1, 1) { value }, Strides.EMPTY)
         }
 
-        operator fun invoke(array: PrimitiveTiledArray, strides: Strides, divider: Int): PrimitiveNDArray {
-            val blockSize = PrimitiveTiledArray.blockSizeByStrides(strides, divider)
-            return if (blockSize == array.blockSize) {
+        operator fun invoke(array: PrimitiveTiledArray, strides: Strides, customBlockSize: Int): PrimitiveNDArray {
+            return if (customBlockSize == array.blockSize) {
                 PrimitiveNDArray(array, strides)
             }
             else {
                 val pointer = PrimitivePointer(array)
-                PrimitiveNDArray(strides, divider) { pointer.getAndIncrement() }
+                PrimitiveNDArray(strides, customBlockSize) { pointer.getAndIncrement() }
             }
         }
     }
